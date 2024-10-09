@@ -1,7 +1,9 @@
 import streamlit as st
 import pandas as pd
+import time
+import numpy as py
 import re
-from Ask_me_ import load_data_pht, build_context_and_response, get_answer, build_context_and_response_mitigasi
+from Ask_me_ import load_data_pht, build_context_and_response, get_answer, build_context_and_response_mitigasi, search_data_pembangkitan, build_context_and_response_pembangkitan
 
 # Syntax guide for user interaction
 with st.expander("Available Syntax (How to ask questions)"):
@@ -41,18 +43,21 @@ with st.expander("Available Syntax (How to ask questions)"):
 st.title('Chatbot Informasi Data PHT dengan Jawaban Deskriptif')
 
 # Memuat data dari file excel
-data_pht, data_mitigasi = load_data_pht()  # Split the tuple into two separate dataframes
+data_pht, data_mitigasi, data_pembangkitan = load_data_pht()  # Split the tuple into two separate dataframes
 
 st.write("Berikut adalah beberapa data yang tersedia:")
 st.write(data_pht.head())  # Menampilkan beberapa baris data
 st.write("Berikut adalah beberapa data mitigasi yang tersedia:")
 st.write(data_mitigasi.head())  # Menampilkan beberapa baris data mitigasi
+st.write("Berikut adalah beberapa data pembangkitan yang tersedia:")
+st.write(data_pembangkitan.head())  # Menampilkan beberapa baris data mitigasi
+
 
 # Input dari pengguna
 keyword = st.text_input("Masukkan kata kunci (misal: nama Lokasi Gitet/Gistet):")
 
 # Checkbox for highlighting option
-highlight_option = st.checkbox("Highlight keyword?", value=True)
+highlight_option = st.checkbox("Highlight keyword? (In Yellow)", value=True)
 
 # Helper function to remove HTML highlighting tags
 def strip_html_tags(text, keyword):
@@ -62,17 +67,18 @@ def strip_html_tags(text, keyword):
 if st.button("Cari Informasi"):
     if keyword:
         # Bangun konteks berdasarkan kata kunci untuk PHT
-        st.write('Mencari informasi PHT...')
         context_pht, response_pht = build_context_and_response(data_pht, keyword)
 
         # Bangun konteks berdasarkan kata kunci untuk mitigasi
-        st.write('Mencari informasi mitigasi...')
         context_mitigasi, response_mitigasi = build_context_and_response_mitigasi(data_mitigasi, keyword)
+        
+        # Bangun konteks berdasarkan kata kunci untuk pembangkitan
+        context_pembangkitan, response_pembangkitan = build_context_and_response_pembangkitan(data_pembangkitan, keyword)
 
         # Use tabs to display the results separately
-        tab1, tab2 = st.tabs(["PHT Information", "Mitigasi Information"])
+        tab1, tab2, tab3 = st.tabs(["Informasi PHT", "Informasi Mitigasi", "Informasi Pembangkitan"])
 
-        # Tab 1: PHT Information
+        # Tab 1: Informasi PHT
         with tab1:
             st.write("Informasi PHT yang ditemukan:")
             if highlight_option:
@@ -83,7 +89,7 @@ if st.button("Cari Informasi"):
                 stripped_response_pht = strip_html_tags(response_pht, keyword)
                 st.write(stripped_response_pht)
 
-        # Tab 2: Mitigasi Information
+        # Tab 2: Informasi Mitigasi 
         with tab2:
             st.write("Informasi mitigasi yang ditemukan:")
             if highlight_option:
@@ -93,11 +99,25 @@ if st.button("Cari Informasi"):
                 # Strip HTML and render plain text without HTML tags
                 stripped_response_mitigasi = strip_html_tags(response_mitigasi, keyword)
                 st.write(stripped_response_mitigasi)
+        
+        # Tab 3: Informasi Pembangkitan
+        with tab3:
+            st.write("Informasi pembangkitan yang ditemukan:")
+            if highlight_option:
+                # Render the highlighted response
+                st.markdown(response_pembangkitan, unsafe_allow_html=True)
+            else:
+                # Strip HTML and render plain text without HTML tags
+                stripped_response_pembangkitan = strip_html_tags(response_pembangkitan, keyword)
+                st.write(stripped_response_pembangkitan)
 
     else:
         st.write("Harap masukkan kata kunci untuk pencarian.")
 
-# Chat interaktif - Input pertanyaan pengguna
+##########################
+#### INTERACTIVE CHAT ####
+##########################
+
 user_question = st.text_input("Ajukan pertanyaan tentang data ini:")
 
 # Helper function to handle user questions about the data
